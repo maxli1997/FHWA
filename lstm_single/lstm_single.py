@@ -48,6 +48,36 @@ for dr in driver_list:
         f = open('./res-cache/'+filename, 'r')
         contents = f.readlines()
         f.close()
+        
+        # loading results from video data (may not exist)
+        try:
+            f2 = open("./res-cache/Face_" + video_name)
+            f3 = open("./res-cache/Cabin_" + video_name)
+        except:
+            print("read file fail of video", video_name)
+            continue
+        # read video results into lists
+        face_res = []
+        for ele in f2.readlines():
+            if ele.strip() == "True":
+                face_res.append(True)
+            else:
+                face_res.append(False)
+        f2.close()
+        cabin_res = []
+        for ele in f3.readlines():
+            for _ in range(5):
+                if ele.strip() == "True":
+                    cabin_res.append(1)
+                else:
+                    cabin_res.append(0)
+        f2.close()
+        # two video processing methods (OpenFace and YoloV4) can have different number of classification results (face and cabin videos can have slightly different length)
+        min_frame = min(len(cabin_res),len(face_res))
+        if min_frame == 0:
+            continue
+        # video results end here
+        
         outnames.append('/LSTM_'+str(driver).zfill(3)+'_'+str(trip).zfill(4)+'_'+str(starttime)+'.txt')
         truths = []
         if data.empty:
@@ -60,7 +90,7 @@ for dr in driver_list:
             else:
                 truths.append(False)
         labels.append(truths)
-
+        
         observation = []
         data = data.to_numpy()
         for i in range(0,len(data)-(timestep+leadtime-1)):
@@ -73,6 +103,22 @@ for dr in driver_list:
                 u = []
                 for k in range(3,7):
                     u.append(data[j][k])
+                
+                # the last feature is the combination of two video classfication
+                try:
+                    f = face_res[j]
+                except:
+                    f = 0
+                try:
+                    c =cabin_res[j]
+                except:
+                    c = 0
+                if f>0 or c>0:
+                    u.append(1)
+                else:
+                    u.append(0)
+                # ends here
+                
                 t.append(u)
             observation.append(t)
         
