@@ -44,6 +44,34 @@ for dr in driver_list:
         f = open('./res-cache/'+filename, 'r')
         contents = f.readlines()
         f.close()
+        
+        # detailed comments in lstm_single.py
+        try:
+            f2 = open("./res-cache/Face_" + video_name)
+            f3 = open("./res-cache/Cabin_" + video_name)
+        except:
+            print("read file fail of video", video_name)
+            continue
+        face_res = []
+        for ele in f2.readlines():
+            if ele.strip() == "True":
+                face_res.append(True)
+            else:
+                face_res.append(False)
+        f2.close()
+        cabin_res = []
+        for ele in f3.readlines():
+            for _ in range(5):
+                if ele.strip() == "True":
+                    cabin_res.append(1)
+                else:
+                    cabin_res.append(0)
+        f2.close()
+        min_frame = min(len(cabin_res),len(face_res))
+        if min_frame == 0:
+            continue
+        # ends here
+        
         outnames.append('/SVC_'+str(driver).zfill(3)+'_'+str(trip).zfill(4)+'_'+str(starttime)+'.txt')
         truths = []
         if data.empty:
@@ -68,6 +96,22 @@ for dr in driver_list:
             for j in range(i,i+(timestep+leadtime)):
                 for k in range(3,7):
                     t.append(data[j][k])
+                    
+                # detailed comments in lstm_single.py    
+                try:
+                    f = face_res[j]
+                except:
+                    f = 0
+                try:
+                    c =cabin_res[j]
+                except:
+                    c = 0
+                if f>0 or c>0:
+                    t.append(1)
+                else:
+                    t.append(0)
+                # ends here
+                
             observation.append(t)
         
         labelset = truths[(timestep+leadtime-1):(timestep+leadtime-1)+len(observation)]
